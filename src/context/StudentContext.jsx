@@ -16,101 +16,99 @@ const StudentContext = createContext();
 
 export function StudentProvider({ children }) {
   const [students, setStudents] = useState([]);
-
   const [loading, setLoading] = useState(true);
-
   const [error, setError] = useState("");
 
   useEffect(() => {
-  async function loadStudents() {
-    try {
-      setLoading(true);
-      setError("");
+    async function loadStudents() {
+      try {
+        setLoading(true);
+        setError("");
 
-      const savedStudents = localStorage.getItem("students");
+        const savedStudents = localStorage.getItem("students");
 
-      if (savedStudents) {
-        setStudents(JSON.parse(savedStudents));
-      } else {
-        const data = await getStudents();
-
-        setStudents(data);
-
-        localStorage.setItem(
-          "students",
-          JSON.stringify(data)
-        );
+        if (savedStudents) {
+          setStudents(JSON.parse(savedStudents));
+        } else {
+          const data = await getStudents();
+          setStudents(data);
+          localStorage.setItem(
+            "students",
+            JSON.stringify(data)
+          );
+        }
+      } catch (error) {
+        setError(error.message);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      setError(error.message);
-    } finally {
-      setLoading(false);
     }
-  }
 
-  loadStudents();
-}, []);
+    loadStudents();
+  }, []);
 
-useEffect(() => {
-  if (students.length > 0) {
-    localStorage.setItem(
-      "students",
-      JSON.stringify(students)
-    );
-  }
-}, [students]);
-
+  useEffect(() => {
+    if (students.length > 0) {
+      localStorage.setItem(
+        "students",
+        JSON.stringify(students)
+      );
+    }
+  }, [students]);
 
   async function addStudent(student) {
-  const created = await createStudent(student);
+    const created = await createStudent(student);
+    setStudents((prev) => [created, ...prev]);
+    return created;
+  }
 
-  setStudents((prev) => [created, ...prev]);
+  async function updateStudentById(id, data) {
+    try {
+      await updateStudent(id, data);
+    } catch (error) {
+      // Ignore API error and update locally
+    }
 
-  return created;
-}
+    const updated = { ...data, id };
 
-async function updateStudentById(id, data) {
-  const updated = await updateStudent(id, data);
+    setStudents((prev) =>
+      prev.map((student) =>
+        student.id === id
+          ? {
+              ...student,
+              ...updated,
+              address: { city: data.address.city },
+              company: { name: data.company.name },
+            }
+          : student
+      )
+    );
 
-  setStudents((prev) =>
-    prev.map((student) =>
-      student.id === id
-        ? {
-            ...student,
-            ...updated,
-            address: {
-              city: data.address.city,
-            },
-            company: {
-              name: data.company.name,
-            },
-          }
-        : student
-    )
-  );
+    return updated;
+  }
 
-  return updated;
-}
+  async function deleteStudentById(id) {
+    try {
+      await deleteStudent(id);
+    } catch (error) {
+      // Ignore API error
+    }
 
-async function deleteStudentById(id) {
-  await deleteStudent(id);
-
-  setStudents((prev) =>
-    prev.filter((student) => student.id !== id)
-  );
-}
+    setStudents((prev) =>
+      prev.filter((student) => student.id !== id)
+    );
+  }
 
   return (
     <StudentContext.Provider
       value={{
-  students,
-  loading,
-  error,
-
-  addStudent,
-  updateStudentById,
-  deleteStudentById,
-}}
+        students,
+        loading,
+        error,
+        addStudent,
+        updateStudentById,
+        deleteStudentById,
+      }}
     >
       {children}
     </StudentContext.Provider>

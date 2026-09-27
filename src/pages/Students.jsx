@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 
 import StudentCard from "../components/StudentCard";
 
@@ -240,46 +240,35 @@ if (!validateForm()) {
   }
 
   // Search + Filter
-  const filteredStudents = students.filter((student) => {
-    const searchText = searchTerm.toLowerCase();
+ const filteredStudents = students.filter((student) => {
+  const searchText = searchTerm.toLowerCase();
 
-    const studentName =
-      student.name?.toLowerCase() || "";
+  const matchesSearch =
+    student.name.toLowerCase().includes(searchText) ||
+    student.username.toLowerCase().includes(searchText) ||
+    student.address?.city
+      ?.toLowerCase()
+      .includes(searchText);
 
-    const username =
-      student.username?.toLowerCase() || "";
+  const course = student.company?.name || "";
 
-    const city =
-      student.address?.city?.toLowerCase() || "";
+  const matchesCourse =
+    courseFilter === "All" || course === course;
 
-    const course =
-      student.company?.name || "";
+  return matchesSearch && matchesCourse;
+});
 
-    const matchesSearch =
-      studentName.includes(searchText) ||
-      username.includes(searchText) ||
-      city.includes(searchText);
+const totalPages = Math.ceil(
+  filteredStudents.length / studentsPerPage
+);
 
-    const matchesCourse =
-      courseFilter === "All" ||
-      course === courseFilter;
+const startIndex =
+  (currentPage - 1) * studentsPerPage;
 
-    return matchesSearch && matchesCourse;
-  });
-
-  // Pagination
-  const totalPages = Math.ceil(
-    filteredStudents.length / studentsPerPage
-  );
-
-  const startIndex =
-    (currentPage - 1) * studentsPerPage;
-
-  const currentStudents =
-    filteredStudents.slice(
-      startIndex,
-      startIndex + studentsPerPage
-    );
+const currentStudents = filteredStudents.slice(
+  startIndex,
+  startIndex + studentsPerPage
+);
 
   if (loading) {
     return (
@@ -498,57 +487,30 @@ if (!validateForm()) {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="pagination">
+          <div className="pagination">
+  <button
+    disabled={currentPage === 1}
+    onClick={() =>
+      setCurrentPage((prev) => prev - 1)
+    }
+  >
+    Previous
+  </button>
 
-          <button
-            onClick={() =>
-              setCurrentPage(
-                currentPage - 1
-              )
-            }
-            disabled={currentPage === 1}
-          >
-            ← Previous
-          </button>
+  <span>
+    Page {currentPage} of {totalPages}
+  </span>
 
-          <div className="page-numbers">
-
-            {Array.from(
-              { length: totalPages },
-              (_, index) => index + 1
-            ).map((page) => (
-              <button
-                key={page}
-                onClick={() =>
-                  setCurrentPage(page)
-                }
-                className={
-                  currentPage === page
-                    ? "active-page"
-                    : ""
-                }
-              >
-                {page}
-              </button>
-            ))}
-
-          </div>
-
-          <button
-            onClick={() =>
-              setCurrentPage(
-                currentPage + 1
-              )
-            }
-            disabled={
-              currentPage === totalPages
-            }
-          >
-            Next →
-          </button>
-
-        </div>
-      )}
+  <button
+    disabled={currentPage === totalPages}
+    onClick={() =>
+      setCurrentPage((prev) => prev + 1)
+    }
+  >
+    Next
+  </button>
+</div>  
+        )}
 
     </div>
   );
